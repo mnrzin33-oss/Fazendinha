@@ -1,0 +1,16 @@
+# Setup
+./setup.sh
+
+# Build APK Debug
+./gradlew android:assembleDebug
+
+# Build APK Release
+./gradlew android:assembleRelease
+
+# O APK estará em:
+# android/build/outputs/apk/debug/android-debug.apk
+# android/build/outputs/apk/release/android-release-unsigned.apk
+
+# No GitHub Actions, o APK é gerado automaticamente ao fazer push
+
+# Nome do app: Fazendinha
