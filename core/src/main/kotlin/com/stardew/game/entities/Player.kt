@@ -1,23 +1,18 @@
 package com.stardew.game.entities
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Rectangle
-import com.stardew.game.StardewGame
 import com.stardew.game.world.GameWorld
 
 class Player(startX: Float, startY: Float) {
-    var x = startX * StardewGame.PPM
-    var y = startY * StardewGame.PPM
-    val width = 12f
-    val height = 16f
+    var x = startX * 32f
+    var y = startY * 32f
+    val width = 14f
+    val height = 20f
     var stamina = 100f
-    var speed = 80f
 
     private var facing = Direction.DOWN
-    private var animTimer = 0f
-    private var isMoving = false
 
     enum class Direction { UP, DOWN, LEFT, RIGHT }
 
@@ -27,7 +22,6 @@ class Player(startX: Float, startY: Float) {
     fun move(dx: Float, dy: Float, world: GameWorld) {
         val newX = x + dx
         val newY = y + dy
-
         val testBounds = Rectangle(newX - width / 2, newY - height / 2, width, height)
 
         if (!world.isColliding(testBounds)) {
@@ -37,45 +31,34 @@ class Player(startX: Float, startY: Float) {
 
         if (dx > 0) facing = Direction.RIGHT
         else if (dx < 0) facing = Direction.LEFT
-        else if (dy > 0) facing = Direction.UP
+        if (dy > 0) facing = Direction.UP
         else if (dy < 0) facing = Direction.DOWN
-
-        isMoving = true
     }
 
     fun useTool(world: GameWorld) {
         val targetX = x + when (facing) {
-            Direction.RIGHT -> 20f
-            Direction.LEFT -> -20f
+            Direction.RIGHT -> 24f
+            Direction.LEFT -> -24f
             else -> 0f
         }
         val targetY = y + when (facing) {
-            Direction.UP -> 20f
-            Direction.DOWN -> -20f
+            Direction.UP -> 24f
+            Direction.DOWN -> -24f
             else -> 0f
         }
-
-        world.interact(targetX, targetY, this)
+        world.interact(targetX, targetY)
         stamina = (stamina - 1f).coerceAtLeast(0f)
     }
 
-    fun render(renderer: ShapeRenderer) {
-        renderer.color = Color(0.2f, 0.6f, 1f, 1f)
-        renderer.rect(x - width / 2, y - height / 2, width, height)
+    fun render(sr: ShapeRenderer) {
+        sr.color = Color(0.2f, 0.5f, 0.9f, 1f)
+        sr.rect(x - width / 2, y - height / 2, width, height)
 
-        renderer.color = Color(1f, 0.8f, 0.6f, 1f)
-        val headSize = 8f
-        renderer.rect(x - headSize / 2, y + height / 2 - 2f, headSize, headSize)
-    }
+        sr.color = Color(0.95f, 0.8f, 0.65f, 1f)
+        sr.circle(x, y + height / 2 + 4f, 6f)
 
-    fun render(batch: com.badlogic.gdx.graphics.g2d.Batch) {
-        val shapeRenderer = ShapeRenderer()
-        Gdx.gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND)
-        render(shapeRenderer)
-        shapeRenderer.dispose()
-    }
-
-    fun recharge(amount: Float) {
-        stamina = (stamina + amount).coerceAtMost(100f)
+        sr.color = Color(0.4f, 0.25f, 0.1f, 1f)
+        val hatW = 10f
+        sr.rect(x - hatW / 2, y + height / 2 + 8f, hatW, 3f)
     }
 }

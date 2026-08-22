@@ -10,10 +10,10 @@ abstract class Npc(
 ) {
     var x = startX
     var y = startY
-    protected var targetX = startX
-    protected var targetY = startY
-    protected var moveTimer = 0f
-    protected var moveInterval = 3f
+    private var targetX = startX
+    private var targetY = startY
+    private var moveTimer = 0f
+    private var moveInterval = 3f
 
     abstract fun talk(): String
 
@@ -25,7 +25,6 @@ abstract class Npc(
             targetX = x + MathUtils.random(-2f, 2f) * 32f
             targetY = y + MathUtils.random(-2f, 2f) * 32f
         }
-
         val dir = Vector2(targetX - x, targetY - y)
         if (dir.len() > 1f) {
             dir.nor().scl(20f * delta)
@@ -34,33 +33,25 @@ abstract class Npc(
         }
     }
 
-    fun distanceTo(px: Float, py: Float): Float {
-        return Vector2.dst(x, y, px, py)
-    }
+    fun distanceTo(px: Float, py: Float): Float = Vector2.dst(x, y, px, py)
 }
 
 class Farmer(name: String, x: Float, y: Float) : Npc(name, x, y) {
-    private val dialogues = listOf(
-        "Olá! Precisa de sementes?",
-        "A colheita está indo bem este ano!",
-        "O clima está perfeito para plantar.",
-        "Não esqueça de regar suas plantações!"
+    private val lines = listOf(
+        "Ola! Precisa de sementes?",
+        "A colheita esta indo bem!",
+        "O clima esta perfeito pra plantar.",
+        "Nao esqueca de regar!"
     )
-
-    override fun talk(): String {
-        return dialogues[MathUtils.random(0, dialogues.size - 1)]
-    }
+    override fun talk(): String = lines[MathUtils.random(0, lines.size - 1)]
 }
 
 class Merchant(x: Float, y: Float) : Npc("Viajante", x, y) {
-    private val dialogues = listOf(
-        "Tenho itens raros à venda!",
-        "Viajei de longe para chegar aqui.",
-        "Posso comprar seus produtos por um bom preço.",
-        "As montanhas ao norte são perigosas..."
+    private val lines = listOf(
+        "Tenho itens raros!",
+        "Viajei de longe pra chegar aqui.",
+        "Compro seus produtos!",
+        "As montanhas sao perigosas..."
     )
-
-    override fun talk(): String {
-        return dialogues[MathUtils.random(0, dialogues.size - 1)]
-    }
+    override fun talk(): String = lines[MathUtils.random(0, lines.size - 1)]
 }

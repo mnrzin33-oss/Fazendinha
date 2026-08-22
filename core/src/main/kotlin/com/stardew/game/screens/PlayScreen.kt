@@ -7,9 +7,6 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.BitmapFont
-import com.badlogic.gdx.graphics.g2d.TextureAtlas
-import com.badlogic.gdx.graphics.g2d.TextureRegion
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.badlogic.gdx.utils.viewport.Viewport
 import com.stardew.game.StardewGame
@@ -20,7 +17,6 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
     private val camera = OrthographicCamera()
     private val viewport: Viewport = FitViewport(StardewGame.V_WIDTH, StardewGame.V_HEIGHT, camera)
     private val font = BitmapFont()
-    private val shapeRenderer = ShapeRenderer()
 
     private val gameWorld = GameWorld()
     private val player = Player(5f, 5f)
@@ -31,23 +27,27 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
 
     override fun show() {
         font.color = Color.WHITE
-        font.data.setScale(0.8f)
+        font.data.setScale(0.9f)
     }
 
     override fun render(delta: Float) {
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.15f, 1f)
+        Gdx.gl.glClearColor(0.08f, 0.08f, 0.12f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
         handleInput(delta)
-        update(delta)
+        gameWorld.update(delta)
 
         camera.position.set(player.x, player.y, 0f)
         camera.update()
 
-        game.batch.projectionMatrix = camera.combined
+        val sr = game.shapeRenderer
+        sr.projectionMatrix = camera.combined
 
-        gameWorld.render(game.batch, camera)
-        player.render(game.batch)
+        Gdx.gl.glEnable(GL20.GL_BLEND)
+        sr.begin(ShapeRenderer.ShapeType.Filled)
+        gameWorld.render(sr)
+        player.render(sr)
+        sr.end()
 
         renderHUD()
         renderDialog()
@@ -61,9 +61,7 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
             return
         }
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.I)) {
-            showInventory = !showInventory
-        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.I)) showInventory = !showInventory
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
             val npc = gameWorld.getNearbyNpc(player.x, player.y)
@@ -73,7 +71,7 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
             }
         }
 
-        val speed = 80f * delta
+        val speed = 100f * delta
         var dx = 0f
         var dy = 0f
 
@@ -82,82 +80,43 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
         if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) dx -= speed
         if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) dx += speed
 
-        if (dx != 0f || dy != 0f) {
-            player.move(dx, dy, gameWorld)
-        }
+        if (dx != 0f || dy != 0f) player.move(dx, dy, gameWorld)
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
-            player.useTool(gameWorld)
-        }
-    }
-
-    private fun update(delta: Float) {
-        gameWorld.update(delta)
+        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) player.useTool(gameWorld)
     }
 
     private fun renderHUD() {
-        game.batch.projectionMatrix = viewport.camera.combined
-        game.batch.begin()
-
-        font.draw(game.batch, "WASD: Mover | E: Falar | I: Inventário | Espaço: Usar", 5f, viewport.worldHeight - 5f)
-
-        font.draw(game.batch, "Dia 1 - Primavera", viewport.worldWidth - 150f, viewport.worldHeight - 5f)
-
-        font.draw(game.batch, "Estamina: ${player.stamina.toInt()}/100", 5f, 15f)
+        val b = game.batch
+        b.projectionMatrix = viewport.camera.combined
+        b.begin()
+        font.draw(b, "WASD:Mover  E:Falar  I:Inventario Espaco:Usar", 8f, viewport.worldHeight - 8f)
+        font.draw(b, "Dia 1 - Primavera", viewport.worldWidth - 140f, viewport.worldHeight - 8f)
+        font.draw(b, "Estamina: ${player.stamina.toInt()}/100", 8f, 18f)
 
         if (showInventory) {
-            renderInventory()
+            val bw = 140f
+            val bh = 90f
+            val bx = (viewport.worldWidth - bw) / 2
+            val by = (viewport.worldHeight - bh) / 2
+            font.draw(b, "--- INVENTARIO ---", bx + 10f, by + bh - 12f)
+            font.draw(b, "Semente de Trigo x5", bx + 10f, by + bh - 32f)
+            font.draw(b, "Machado x1", bx + 10f, by + bh - 48f)
+            font.draw(b, "100 Moedas", bx + 10f, by + bh - 64f)
         }
-
-        game.batch.end()
-    }
-
-    private fun renderInventory() {
-        val boxWidth = 120f
-        val boxHeight = 80f
-        val x = (viewport.worldWidth - boxWidth) / 2
-        val y = (viewport.worldHeight - boxHeight) / 2
-
-        Gdx.gl.glEnable(GL20.GL_BLEND)
-        shapeRenderer.projectionMatrix = viewport.camera.combined
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
-        shapeRenderer.color = Color(0f, 0f, 0f, 0.8f)
-        shapeRenderer.rect(x, y, boxWidth, boxHeight)
-        shapeRenderer.end()
-
-        font.draw(game.batch, "--- INVENTÁRIO ---", x + 10f, y + boxHeight - 10f)
-        font.draw(game.batch, "Semente de Trigo x5", x + 10f, y + boxHeight - 30f)
-        font.draw(game.batch, "Machado x1", x + 10f, y + boxHeight - 45f)
-        font.draw(game.batch, "100 Moedas", x + 10f, y + boxHeight - 60f)
+        b.end()
     }
 
     private fun renderDialog() {
         if (!showDialog) return
-
-        val boxWidth = viewport.worldWidth - 20f
-        val boxHeight = 40f
-        val x = 10f
-        val y = 10f
-
-        Gdx.gl.glEnable(GL20.GL_BLEND)
-        shapeRenderer.projectionMatrix = viewport.camera.combined
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
-        shapeRenderer.color = Color(0f, 0f, 0.3f, 0.9f)
-        shapeRenderer.rect(x, y, boxWidth, boxHeight)
-        shapeRenderer.color = Color.WHITE
-        shapeRenderer.rect(x, y, boxWidth, 1f)
-        shapeRenderer.rect(x, y + boxHeight, boxWidth, 1f)
-        shapeRenderer.rect(x, y, 1f, boxHeight)
-        shapeRenderer.rect(x + boxWidth, y, 1f, boxHeight)
-        shapeRenderer.end()
-
-        game.batch.projectionMatrix = viewport.camera.combined
-        game.batch.begin()
-        font.draw(game.batch, dialogText, x + 10f, y + boxHeight - 12f)
+        val b = game.batch
+        b.projectionMatrix = viewport.camera.combined
+        b.begin()
+        font.setColor(Color.CYAN)
+        font.draw(b, dialogText, 16f, 50f)
         font.setColor(Color.GRAY)
-        font.draw(game.batch, "[Espaço para continuar]", x + 10f, y + 10f)
+        font.draw(b, "[Espaco]", 16f, 24f)
         font.setColor(Color.WHITE)
-        game.batch.end()
+        b.end()
     }
 
     override fun resize(width: Int, height: Int) {
@@ -166,7 +125,5 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
 
     override fun dispose() {
         font.dispose()
-        shapeRenderer.dispose()
-        gameWorld.dispose()
     }
 }
