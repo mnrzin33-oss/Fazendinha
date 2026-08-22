@@ -25,10 +25,6 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Setup Android NDK
-        run: |
-          echo "y" | sdkmanager --install "ndk;25.2.9519653" --sdk_root=$ANDROID_HOME
-
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
@@ -54,6 +50,55 @@ jobs:
           name: release-apk
           path: android/build/outputs/apk/release/*.apk
           retention-days: 90
+
+      - name: Manage Tags (keep max 2)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tags = await github.rest.repos.listTags({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+
+            const buildTags = tags.data
+              .filter(t => t.name.startsWith('v'))
+              .sort((a, b) => {
+                const numA = parseInt(a.name.replace('v', ''));
+                const numB = parseInt(b.name.replace('v', ''));
+                return numB - numA;
+              });
+
+            if (buildTags.length >= 2) {
+              const toDelete = buildTags.slice(2);
+              for (const tag of toDelete) {
+                console.log(`Deleting old tag: ${tag.name}`);
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${tag.name}`
+                });
+
+                try {
+                  const releases = await github.rest.repos.listReleases({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo
+                  });
+                  const release = releases.data.find(r => r.tag_name === tag.name);
+                  if (release) {
+                    console.log(`Deleting old release: ${release.id}`);
+                    await github.rest.repos.deleteRelease({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      release_id: release.id
+                    });
+                  }
+                } catch (e) {
+                  console.log(`No release found for ${tag.name}`);
+                }
+              }
+            }
 
       - name: Create Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
