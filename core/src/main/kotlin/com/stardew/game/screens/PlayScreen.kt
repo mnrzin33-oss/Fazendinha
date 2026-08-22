@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.BitmapFont
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.viewport.FitViewport
@@ -149,7 +150,7 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
         sr.projectionMatrix = camera.combined
 
         Gdx.gl.glEnable(GL20.GL_BLEND)
-        sr.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled)
+        sr.begin(ShapeRenderer.ShapeType.Filled)
         gameWorld.render(sr)
         player.render(sr)
         sr.end()
@@ -224,7 +225,7 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
         sr.projectionMatrix = viewport.camera.combined
 
         Gdx.gl.glEnable(GL20.GL_BLEND)
-        sr.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled)
+        sr.begin(ShapeRenderer.ShapeType.Filled)
 
         // Talk button
         sr.color = Color(0.2f, 0.6f, 0.2f, 0.7f)
