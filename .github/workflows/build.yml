@@ -34,24 +34,14 @@ jobs:
       - name: Copy local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      - name: Build Debug APK
+      - name: Build Universal APK
         run: ./gradlew android:assembleDebug
 
-      - name: Build Release APK
-        run: ./gradlew android:assembleRelease
-
-      - name: Upload Debug APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
+          name: Fazendinha-APK
           path: android/build/outputs/apk/debug/*.apk
-          retention-days: 30
-
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk
-          path: android/build/outputs/apk/release/*.apk
           retention-days: 90
 
       - name: Manage Tags (keep max 2)
@@ -109,7 +99,5 @@ jobs:
         with:
           tag_name: v${{ github.run_number }}
           name: Build ${{ github.run_number }}
-          files: |
-            android/build/outputs/apk/debug/*.apk
-            android/build/outputs/apk/release/*.apk
+          files: android/build/outputs/apk/debug/*.apk
           draft: true
