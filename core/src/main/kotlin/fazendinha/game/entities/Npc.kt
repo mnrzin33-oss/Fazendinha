@@ -1,4 +1,4 @@
-package com.stardew.game.entities
+package fazendinha.game.entities
 
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2

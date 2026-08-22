@@ -1,4 +1,4 @@
-package com.stardew.game.screens
+package fazendinha.game.screens
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input
@@ -9,17 +9,16 @@ import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
-import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.badlogic.gdx.utils.viewport.Viewport
-import com.stardew.game.StardewGame
-import com.stardew.game.entities.Player
-import com.stardew.game.world.GameWorld
+import fazendinha.game.FazendinhaGame
+import fazendinha.game.entities.Player
+import fazendinha.game.world.GameWorld
 
-class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
+class PlayScreen(private val game: FazendinhaGame) : ScreenAdapter() {
     private val camera = OrthographicCamera()
-    private val viewport: Viewport = FitViewport(StardewGame.V_WIDTH, StardewGame.V_HEIGHT, camera)
+    private val viewport: Viewport = FitViewport(FazendinhaGame.V_WIDTH, FazendinhaGame.V_HEIGHT, camera)
     private val font = BitmapFont()
 
     private val gameWorld = GameWorld()
@@ -29,8 +28,6 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
     private var showDialog = false
     private var dialogText = ""
 
-    // Touch controls
-    private val touchPos = Vector2()
     private val joystickCenter = Vector2(60f, 80f)
     private val joystickRadius = 35f
     private var joystickPointer = -1
@@ -38,7 +35,6 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
 
     private var isMobile = false
 
-    // Button areas (x, y, w, h)
     private val btnTalk = floatArrayOf(400f, 50f, 50f, 30f)
     private val btnUse = floatArrayOf(400f, 90f, 50f, 30f)
     private val btnInv = floatArrayOf(400f, 10f, 50f, 30f)
@@ -54,14 +50,12 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
             override fun touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
                 val v = viewport.unproject(Vector2(screenX.toFloat(), screenY.toFloat()))
 
-                // Joystick area (left side)
                 if (v.x < 140f && v.y < 180f) {
                     joystickPointer = pointer
                     updateJoystick(v)
                     return true
                 }
 
-                // Buttons (right side)
                 if (v.x > 380f) {
                     when {
                         inButton(v.x, v.y, btnTalk) -> onTalk()
@@ -71,7 +65,6 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
                     return true
                 }
 
-                // Tap anywhere to dismiss dialog
                 if (showDialog) {
                     showDialog = false
                     return true
@@ -210,6 +203,7 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
         val bh = 100f
         val bx = (viewport.worldWidth - bw) / 2
         val by = (viewport.worldHeight - bh) / 2
+        val b = game.batch
 
         font.setColor(Color.WHITE)
         font.draw(b, "---- INVENTARIO ----", bx + 10f, by + bh - 14f)
@@ -227,23 +221,18 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
         Gdx.gl.glEnable(GL20.GL_BLEND)
         sr.begin(ShapeRenderer.ShapeType.Filled)
 
-        // Talk button
         sr.color = Color(0.2f, 0.6f, 0.2f, 0.7f)
         sr.rect(btnTalk[0], btnTalk[1], btnTalk[2], btnTalk[3])
 
-        // Use button
         sr.color = Color(0.2f, 0.4f, 0.8f, 0.7f)
         sr.rect(btnUse[0], btnUse[1], btnUse[2], btnUse[3])
 
-        // Inventory button
         sr.color = Color(0.6f, 0.4f, 0.2f, 0.7f)
         sr.rect(btnInv[0], btnInv[1], btnInv[2], btnInv[3])
 
-        // Joystick background
         sr.color = Color(1f, 1f, 1f, 0.15f)
         sr.circle(joystickCenter.x, joystickCenter.y, joystickRadius + 5f)
 
-        // Joystick knob
         if (joystickPointer >= 0) {
             sr.color = Color(1f, 1f, 1f, 0.5f)
         } else {
@@ -255,7 +244,6 @@ class PlayScreen(private val game: StardewGame) : ScreenAdapter() {
 
         sr.end()
 
-        // Button labels
         val b = game.batch
         b.projectionMatrix = viewport.camera.combined
         b.begin()

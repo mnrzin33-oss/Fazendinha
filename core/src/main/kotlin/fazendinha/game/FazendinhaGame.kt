@@ -1,11 +1,11 @@
-package com.stardew.game
+package fazendinha.game
 
 import com.badlogic.gdx.Game
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
-import com.stardew.game.screens.PlayScreen
+import fazendinha.game.screens.PlayScreen
 
-class StardewGame : Game() {
+class FazendinhaGame : Game() {
     lateinit var batch: SpriteBatch
         private set
     lateinit var shapeRenderer: ShapeRenderer

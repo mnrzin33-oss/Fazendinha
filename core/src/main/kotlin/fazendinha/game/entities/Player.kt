@@ -1,9 +1,9 @@
-package com.stardew.game.entities
+package fazendinha.game.entities
 
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Rectangle
-import com.stardew.game.world.GameWorld
+import fazendinha.game.world.GameWorld
 
 class Player(startX: Float, startY: Float) {
     var x = startX * 32f

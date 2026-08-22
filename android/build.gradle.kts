@@ -6,11 +6,11 @@ plugins {
 val gdxVersion = "1.12.1"
 
 android {
-    namespace = "com.stardew.game"
+    namespace = "fazendinha.game"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.stardew.game"
+        applicationId = "fazendinha.game"
         minSdk = 21
         targetSdk = 34
         versionCode = 1

@@ -1,4 +1,4 @@
-package com.stardew.game
+package fazendinha.game
 
 import android.os.Bundle
 import com.badlogic.gdx.backends.android.AndroidApplication
@@ -11,8 +11,7 @@ class AndroidLauncher : AndroidApplication() {
             useImmersiveMode = true
             useAccelerometer = false
             useCompass = false
-            numSamples = 0
         }
-        initialize(StardewGame(), config)
+        initialize(FazendinhaGame(), config)
     }
 }

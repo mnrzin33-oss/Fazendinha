@@ -1,11 +1,11 @@
-package com.stardew.game.world
+package fazendinha.game.world
 
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Rectangle
-import com.stardew.game.entities.Farmer
-import com.stardew.game.entities.Merchant
-import com.stardew.game.entities.Npc
+import fazendinha.game.entities.Farmer
+import fazendinha.game.entities.Merchant
+import fazendinha.game.entities.Npc
 
 class GameWorld {
     companion object {
