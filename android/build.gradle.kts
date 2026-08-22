@@ -15,10 +15,6 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
-
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")
-        }
     }
 
     compileOptions {
@@ -33,20 +29,43 @@ android {
     sourceSets {
         getByName("main") {
             assets.srcDirs(arrayOf("../core/assets"))
+            jniLibs.srcDirs(arrayOf("libs"))
         }
     }
 
-    packagingOptions {
-        jniLibs {
-            useLegacyPackaging = true
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android.txt"))
+        }
+        debug {
+            isMinifyEnabled = false
         }
     }
+}
+
+configurations {
+    create("natives")
+}
+
+fun DependencyHandlerScope.natives(dependencyNotation: String) {
+    val dep = project.dependencies.create(dependencyNotation)
+    configurations.getByName("natives").dependencies.add(dep)
 }
 
 dependencies {
     implementation(project(":core"))
     implementation("com.badlogicgames.gdx:gdx-backend-android:$gdxVersion")
-    implementation("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a")
-    implementation("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a")
-    implementation("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64")
+    natives("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a")
+    natives("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a")
+    natives("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64")
+}
+
+tasks.register<Copy>("copyNatives") {
+    from(configurations.getByName("natives"))
+    into(project.file("libs"))
+}
+
+tasks.matching { it.name.contains("merge") && it.name.contains("JniLibFolders") }.configureEach {
+    dependsOn("copyNatives")
 }
