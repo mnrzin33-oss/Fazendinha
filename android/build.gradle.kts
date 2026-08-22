@@ -5,10 +5,13 @@ plugins {
 
 val gdxVersion = "1.12.1"
 
+configurations {
+    create("natives")
+}
+
 android {
     namespace = "com.stardew.game"
     compileSdk = 34
-    ndkVersion = "25.2.9519653"
 
     defaultConfig {
         applicationId = "com.stardew.game"
@@ -35,6 +38,11 @@ android {
     }
 }
 
+fun DependencyHandlerScope.natives(dependencyNotation: String) {
+    val dependency = project.dependencies.create(dependencyNotation)
+    configurations.getByName("natives").dependencies.add(dependency)
+}
+
 dependencies {
     implementation(project(":core"))
     implementation("com.badlogicgames.gdx:gdx-backend-android:$gdxVersion")
@@ -42,16 +50,6 @@ dependencies {
     natives("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a")
     natives("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86")
     natives("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64")
-}
-
-fun DependencyHandlerScope.natives(dependencyNotation: String) {
-    val dependency = project.dependencies.create(dependencyNotation)
-    val natives = configurations.getByName("natives")
-    natives.dependencies.add(dependency)
-}
-
-configurations {
-    create("natives")
 }
 
 tasks.register<Copy>("copyNatives") {
