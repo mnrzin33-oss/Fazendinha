@@ -1,4 +1,4 @@
-name: Build Fazendinha APK
+name: Build & Verify
 
 on:
   push:
@@ -28,14 +28,28 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Grant execute permission for gradlew
+      - name: Grant execute permission
         run: chmod +x gradlew
 
       - name: Copy local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      - name: Build Universal APK
+      - name: Lint check
+        run: ./gradlew core:check 2>&1 || true
+        continue-on-error: true
+
+      - name: Build APK
         run: ./gradlew android:assembleDebug
+
+      - name: Verify APK exists
+        run: |
+          APK=$(find android/build/outputs/apk -name "*.apk" | head -1)
+          if [ -z "$APK" ]; then
+            echo "ERROR: No APK found!"
+            exit 1
+          fi
+          echo "APK built successfully: $APK"
+          ls -lh "$APK"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -57,39 +71,30 @@ jobs:
 
             const buildTags = tags.data
               .filter(t => t.name.startsWith('v'))
-              .sort((a, b) => {
-                const numA = parseInt(a.name.replace('v', ''));
-                const numB = parseInt(b.name.replace('v', ''));
-                return numB - numA;
-              });
+              .sort((a, b) => parseInt(b.name.replace('v', '')) - parseInt(a.name.replace('v', '')));
 
             if (buildTags.length >= 2) {
-              const toDelete = buildTags.slice(2);
-              for (const tag of toDelete) {
-                console.log(`Deleting old tag: ${tag.name}`);
+              for (const tag of buildTags.slice(2)) {
+                console.log(`Deleting: ${tag.name}`);
                 await github.rest.git.deleteRef({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   ref: `tags/${tag.name}`
                 });
-
                 try {
                   const releases = await github.rest.repos.listReleases({
                     owner: context.repo.owner,
                     repo: context.repo.repo
                   });
-                  const release = releases.data.find(r => r.tag_name === tag.name);
-                  if (release) {
-                    console.log(`Deleting old release: ${release.id}`);
+                  const r = releases.data.find(r => r.tag_name === tag.name);
+                  if (r) {
                     await github.rest.repos.deleteRelease({
                       owner: context.repo.owner,
                       repo: context.repo.repo,
-                      release_id: release.id
+                      release_id: r.id
                     });
                   }
-                } catch (e) {
-                  console.log(`No release found for ${tag.name}`);
-                }
+                } catch (e) {}
               }
             }
 

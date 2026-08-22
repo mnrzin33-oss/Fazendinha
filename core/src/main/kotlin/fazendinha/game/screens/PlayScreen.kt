@@ -17,66 +17,83 @@ import fazendinha.game.entities.Player
 import fazendinha.game.world.GameWorld
 
 class PlayScreen(private val game: FazendinhaGame) : ScreenAdapter() {
-    private val camera = OrthographicCamera()
-    private val viewport: Viewport = FitViewport(FazendinhaGame.V_WIDTH, FazendinhaGame.V_HEIGHT, camera)
-    private val font = BitmapFont()
+    private lateinit var camera: OrthographicCamera
+    private lateinit var viewport: Viewport
+    private lateinit var font: BitmapFont
 
-    private val gameWorld = GameWorld()
-    private val player = Player(5f, 5f)
+    private lateinit var gameWorld: GameWorld
+    private lateinit var player: Player
 
     private var showInventory = false
     private var showDialog = false
     private var dialogText = ""
+    private var isMobile = false
+    private var initialized = false
 
+    private var joystickPointer = -1
     private val joystickCenter = Vector2(60f, 80f)
     private val joystickRadius = 35f
-    private var joystickPointer = -1
-    private var joystickDir = Vector2.Zero
-
-    private var isMobile = false
+    private var joystickDX = 0f
+    private var joystickDY = 0f
 
     private val btnTalk = floatArrayOf(400f, 50f, 50f, 30f)
     private val btnUse = floatArrayOf(400f, 90f, 50f, 30f)
     private val btnInv = floatArrayOf(400f, 10f, 50f, 30f)
 
     override fun show() {
-        font.color = Color.WHITE
-        font.data.setScale(0.8f)
+        try {
+            camera = OrthographicCamera()
+            viewport = FitViewport(FazendinhaGame.V_WIDTH, FazendinhaGame.V_HEIGHT, camera)
+            font = BitmapFont()
+            font.color = Color.WHITE
+            font.data.setScale(0.8f)
 
-        isMobile = (Gdx.app.type == com.badlogic.gdx.Application.ApplicationType.Android ||
-                    Gdx.app.type == com.badlogic.gdx.Application.ApplicationType.iOS)
+            gameWorld = GameWorld()
+            player = Player(5f, 5f)
 
+            isMobile = (Gdx.app.type == com.badlogic.gdx.Application.ApplicationType.Android ||
+                        Gdx.app.type == com.badlogic.gdx.Application.ApplicationType.iOS)
+
+            setupInput()
+            initialized = true
+        } catch (e: Exception) {
+            Gdx.app.error("Fazendinha", "Init error", e)
+        }
+    }
+
+    private fun setupInput() {
         Gdx.input.inputProcessor = object : InputAdapter() {
             override fun touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
-                val v = viewport.unproject(Vector2(screenX.toFloat(), screenY.toFloat()))
+                try {
+                    val v = viewport.unproject(Vector2(screenX.toFloat(), screenY.toFloat()))
 
-                if (v.x < 140f && v.y < 180f) {
-                    joystickPointer = pointer
-                    updateJoystick(v)
-                    return true
-                }
-
-                if (v.x > 380f) {
-                    when {
-                        inButton(v.x, v.y, btnTalk) -> onTalk()
-                        inButton(v.x, v.y, btnUse) -> onUseTool()
-                        inButton(v.x, v.y, btnInv) -> showInventory = !showInventory
+                    if (v.x < 140f && v.y < 180f) {
+                        joystickPointer = pointer
+                        updateJoystick(v.x, v.y)
+                        return true
                     }
-                    return true
-                }
 
-                if (showDialog) {
-                    showDialog = false
-                    return true
-                }
+                    if (v.x > 380f) {
+                        if (v.y in btnTalk[1]..btnTalk[1] + btnTalk[3]) onTalk()
+                        else if (v.y in btnUse[1]..btnUse[1] + btnUse[3]) onUseTool()
+                        else if (v.y in btnInv[1]..btnInv[1] + btnInv[3]) showInventory = !showInventory
+                        return true
+                    }
 
+                    if (showDialog) {
+                        showDialog = false
+                        return true
+                    }
+                } catch (e: Exception) {
+                    Gdx.app.error("Fazendinha", "Touch error", e)
+                }
                 return false
             }
 
             override fun touchDragged(screenX: Int, screenY: Int, pointer: Int): Boolean {
                 if (pointer == joystickPointer) {
                     val v = viewport.unproject(Vector2(screenX.toFloat(), screenY.toFloat()))
-                    updateJoystick(v)
+                    updateJoystick(v.x, v.y)
                     return true
                 }
                 return false
@@ -85,7 +102,8 @@ class PlayScreen(private val game: FazendinhaGame) : ScreenAdapter() {
             override fun touchUp(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
                 if (pointer == joystickPointer) {
                     joystickPointer = -1
-                    joystickDir = Vector2.Zero
+                    joystickDX = 0f
+                    joystickDY = 0f
                     return true
                 }
                 return false
@@ -93,19 +111,20 @@ class PlayScreen(private val game: FazendinhaGame) : ScreenAdapter() {
         }
     }
 
-    private fun inButton(x: Float, y: Float, btn: FloatArray): Boolean {
-        return x >= btn[0] && x <= btn[0] + btn[2] && y >= btn[1] && y <= btn[1] + btn[3]
-    }
-
-    private fun updateJoystick(touch: Vector2) {
-        joystickDir = Vector2(touch.x - joystickCenter.x, touch.y - joystickCenter.y)
-        if (joystickDir.len() > joystickRadius) {
-            joystickDir.limit(joystickRadius)
+    private fun updateJoystick(touchX: Float, touchY: Float) {
+        var dx = touchX - joystickCenter.x
+        var dy = touchY - joystickCenter.y
+        val len = Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+        if (len > joystickRadius) {
+            dx = dx / len * joystickRadius
+            dy = dy / len * joystickRadius
         }
-        if (joystickDir.len() > 2f) {
-            joystickDir.nor()
+        if (len > 2f) {
+            joystickDX = dx / joystickRadius
+            joystickDY = dy / joystickRadius
         } else {
-            joystickDir = Vector2.Zero
+            joystickDX = 0f
+            joystickDY = 0f
         }
     }
 
@@ -130,117 +149,72 @@ class PlayScreen(private val game: FazendinhaGame) : ScreenAdapter() {
     }
 
     override fun render(delta: Float) {
-        Gdx.gl.glClearColor(0.08f, 0.08f, 0.12f, 1f)
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
+        if (!initialized) return
 
-        handleInput(delta)
-        gameWorld.update(delta)
+        try {
+            Gdx.gl.glClearColor(0.08f, 0.08f, 0.12f, 1f)
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        camera.position.set(player.x, player.y, 0f)
-        camera.update()
+            handleInput(delta)
+            gameWorld.update(delta)
 
+            camera.position.set(player.x, player.y, 0f)
+            camera.update()
+
+            Gdx.gl.glEnable(GL20.GL_BLEND)
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)
+
+            renderWorld()
+            renderHUD()
+            if (isMobile) renderButtons()
+            if (showDialog) renderDialog()
+        } catch (e: Exception) {
+            Gdx.app.error("Fazendinha", "Render error", e)
+        }
+    }
+
+    private fun renderWorld() {
         val sr = game.shapeRenderer
         sr.projectionMatrix = camera.combined
-
-        Gdx.gl.glEnable(GL20.GL_BLEND)
         sr.begin(ShapeRenderer.ShapeType.Filled)
         gameWorld.render(sr)
         player.render(sr)
         sr.end()
-
-        renderHUD()
-        if (isMobile) renderButtons()
-        renderDialog()
-    }
-
-    private fun handleInput(delta: Float) {
-        if (showDialog) {
-            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) || Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
-                showDialog = false
-            }
-            return
-        }
-
-        if (Gdx.input.isKeyJustPressed(Input.Keys.I)) showInventory = !showInventory
-
-        if (Gdx.input.isKeyJustPressed(Input.Keys.E)) onTalk()
-
-        val speed = 100f * delta
-        var dx = joystickDir.x * speed
-        var dy = joystickDir.y * speed
-
-        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) dy += speed
-        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) dy -= speed
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) dx -= speed
-        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) dx += speed
-
-        if (dx != 0f || dy != 0f) player.move(dx, dy, gameWorld)
-
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) player.useTool(gameWorld)
     }
 
     private fun renderHUD() {
         val b = game.batch
         b.projectionMatrix = viewport.camera.combined
         b.begin()
-
         font.setColor(Color.WHITE)
         font.draw(b, "Dia 1 - Primavera", viewport.worldWidth - 120f, viewport.worldHeight - 8f)
         font.draw(b, "Estamina: ${player.stamina.toInt()}/100", 8f, viewport.worldHeight - 8f)
 
-        if (!isMobile) {
-            font.setColor(Color.LIGHT_GRAY)
-            font.draw(b, "WASD:Mover  E:Falar  I:Inv  Space:Usar", 8f, 12f)
+        if (showInventory) {
+            font.draw(b, "---- INVENTARIO ----", viewport.worldWidth / 2 - 50f, viewport.worldHeight / 2 + 40f)
+            font.draw(b, "Semente de Trigo x5", viewport.worldWidth / 2 - 50f, viewport.worldHeight / 2 + 20f)
+            font.draw(b, "Machado x1", viewport.worldWidth / 2 - 50f, viewport.worldHeight / 2f)
+            font.draw(b, "100 Moedas", viewport.worldWidth / 2 - 50f, viewport.worldHeight / 2 - 20f)
         }
-
-        if (showInventory) renderInventory()
-
         b.end()
-    }
-
-    private fun renderInventory() {
-        val bw = 150f
-        val bh = 100f
-        val bx = (viewport.worldWidth - bw) / 2
-        val by = (viewport.worldHeight - bh) / 2
-        val b = game.batch
-
-        font.setColor(Color.WHITE)
-        font.draw(b, "---- INVENTARIO ----", bx + 10f, by + bh - 14f)
-        font.draw(b, "Semente de Trigo x5", bx + 10f, by + bh - 36f)
-        font.draw(b, "Machado x1", bx + 10f, by + bh - 54f)
-        font.draw(b, "100 Moedas", bx + 10f, by + bh - 72f)
-        font.setColor(Color.GRAY)
-        font.draw(b, "Toque pra fechar", bx + 10f, by + 10f)
     }
 
     private fun renderButtons() {
         val sr = game.shapeRenderer
         sr.projectionMatrix = viewport.camera.combined
-
-        Gdx.gl.glEnable(GL20.GL_BLEND)
         sr.begin(ShapeRenderer.ShapeType.Filled)
 
-        sr.color = Color(0.2f, 0.6f, 0.2f, 0.7f)
+        sr.color = Color(0.2f, 0.6f, 0.2f, 0.6f)
         sr.rect(btnTalk[0], btnTalk[1], btnTalk[2], btnTalk[3])
-
-        sr.color = Color(0.2f, 0.4f, 0.8f, 0.7f)
+        sr.color = Color(0.2f, 0.4f, 0.8f, 0.6f)
         sr.rect(btnUse[0], btnUse[1], btnUse[2], btnUse[3])
-
-        sr.color = Color(0.6f, 0.4f, 0.2f, 0.7f)
+        sr.color = Color(0.6f, 0.4f, 0.2f, 0.6f)
         sr.rect(btnInv[0], btnInv[1], btnInv[2], btnInv[3])
 
         sr.color = Color(1f, 1f, 1f, 0.15f)
         sr.circle(joystickCenter.x, joystickCenter.y, joystickRadius + 5f)
-
-        if (joystickPointer >= 0) {
-            sr.color = Color(1f, 1f, 1f, 0.5f)
-        } else {
-            sr.color = Color(1f, 1f, 1f, 0.3f)
-        }
-        val knobX = joystickCenter.x + joystickDir.x * joystickRadius
-        val knobY = joystickCenter.y + joystickDir.y * joystickRadius
-        sr.circle(knobX, knobY, 12f)
+        sr.color = if (joystickPointer >= 0) Color(1f, 1f, 1f, 0.5f) else Color(1f, 1f, 1f, 0.3f)
+        sr.circle(joystickCenter.x + joystickDX * joystickRadius, joystickCenter.y + joystickDY * joystickRadius, 12f)
 
         sr.end()
 
@@ -255,7 +229,6 @@ class PlayScreen(private val game: FazendinhaGame) : ScreenAdapter() {
     }
 
     private fun renderDialog() {
-        if (!showDialog) return
         val b = game.batch
         b.projectionMatrix = viewport.camera.combined
         b.begin()
@@ -266,11 +239,35 @@ class PlayScreen(private val game: FazendinhaGame) : ScreenAdapter() {
         b.end()
     }
 
+    private fun handleInput(delta: Float) {
+        if (showDialog) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) || Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+                showDialog = false
+            }
+            return
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.I)) showInventory = !showInventory
+        if (Gdx.input.isKeyJustPressed(Input.Keys.E)) onTalk()
+
+        val speed = 100f * delta
+        var dx = joystickDX * speed
+        var dy = joystickDY * speed
+
+        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) dy += speed
+        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) dy -= speed
+        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) dx -= speed
+        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) dx += speed
+
+        if (dx != 0f || dy != 0f) player.move(dx, dy, gameWorld)
+        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) player.useTool(gameWorld)
+    }
+
     override fun resize(width: Int, height: Int) {
-        viewport.update(width, height)
+        if (::viewport.isInitialized) viewport.update(width, height)
     }
 
     override fun dispose() {
-        font.dispose()
+        if (::font.isInitialized) font.dispose()
     }
 }
