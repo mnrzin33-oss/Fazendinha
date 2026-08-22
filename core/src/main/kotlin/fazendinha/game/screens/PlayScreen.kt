@@ -13,6 +13,7 @@ import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.badlogic.gdx.utils.viewport.Viewport
 import fazendinha.game.FazendinhaGame
+import fazendinha.game.Settings
 import fazendinha.game.entities.Player
 import fazendinha.game.world.GameWorld
 
@@ -27,7 +28,6 @@ class PlayScreen(private val game: FazendinhaGame) : ScreenAdapter() {
     private var showInventory = false
     private var showDialog = false
     private var dialogText = ""
-    private var isMobile = false
     private var initialized = false
 
     private var joystickPointer = -1
@@ -50,9 +50,6 @@ class PlayScreen(private val game: FazendinhaGame) : ScreenAdapter() {
 
             gameWorld = GameWorld()
             player = Player(5f, 5f)
-
-            isMobile = (Gdx.app.type == com.badlogic.gdx.Application.ApplicationType.Android ||
-                        Gdx.app.type == com.badlogic.gdx.Application.ApplicationType.iOS)
 
             setupInput()
             initialized = true
@@ -166,7 +163,7 @@ class PlayScreen(private val game: FazendinhaGame) : ScreenAdapter() {
 
             renderWorld()
             renderHUD()
-            if (isMobile) renderButtons()
+            if (game.isMobile) renderButtons()
             if (showDialog) renderDialog()
         } catch (e: Exception) {
             Gdx.app.error("Fazendinha", "Render error", e)
@@ -190,7 +187,13 @@ class PlayScreen(private val game: FazendinhaGame) : ScreenAdapter() {
         font.draw(b, "Dia 1 - Primavera", viewport.worldWidth - 120f, viewport.worldHeight - 8f)
         font.draw(b, "Estamina: ${player.stamina.toInt()}/100", 8f, viewport.worldHeight - 8f)
 
+        if (Settings.showFps) {
+            font.setColor(Color.GREEN)
+            font.draw(b, "FPS: ${Gdx.graphics.framesPerSecond}", viewport.worldWidth - 80f, 12f)
+        }
+
         if (showInventory) {
+            font.setColor(Color.WHITE)
             font.draw(b, "---- INVENTARIO ----", viewport.worldWidth / 2 - 50f, viewport.worldHeight / 2 + 40f)
             font.draw(b, "Semente de Trigo x5", viewport.worldWidth / 2 - 50f, viewport.worldHeight / 2 + 20f)
             font.draw(b, "Machado x1", viewport.worldWidth / 2 - 50f, viewport.worldHeight / 2f)
@@ -244,6 +247,11 @@ class PlayScreen(private val game: FazendinhaGame) : ScreenAdapter() {
             if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) || Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
                 showDialog = false
             }
+            return
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            game.setScreen(MenuScreen(game))
             return
         }
 
